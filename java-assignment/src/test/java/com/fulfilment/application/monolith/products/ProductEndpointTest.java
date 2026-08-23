@@ -2,6 +2,7 @@ package com.fulfilment.application.monolith.products;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.core.IsNot.not;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -32,5 +33,13 @@ public class ProductEndpointTest {
         .then()
         .statusCode(200)
         .body(not(containsString("TONSTAD")), containsString("KALLAX"), containsString("BESTÅ"));
+
+    given()
+        .when()
+        .get(path + "/1")
+        .then()
+        .statusCode(404)
+        .body("code", equalTo("PRODUCT_NOT_FOUND"))
+        .body("status", equalTo(404));
   }
 }

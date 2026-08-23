@@ -1,7 +1,7 @@
 package com.fulfilment.application.monolith.stores;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fulfilment.application.monolith.common.exceptions.ResourceErrorCode;
+import com.fulfilment.application.monolith.common.exceptions.ResourceException;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
@@ -15,12 +15,8 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.ExceptionMapper;
-import jakarta.ws.rs.ext.Provider;
 import java.util.List;
-import org.jboss.logging.Logger;
 
 @Path("store")
 @ApplicationScoped
@@ -29,8 +25,6 @@ import org.jboss.logging.Logger;
 public class StoreResource {
 
   @Inject Event<StoreChanged> storeChanges;
-
-  private static final Logger LOGGER = Logger.getLogger(StoreResource.class.getName());
 
   @GET
   public List<Store> get() {
@@ -42,7 +36,8 @@ public class StoreResource {
   public Store getSingle(Long id) {
     Store entity = Store.findById(id);
     if (entity == null) {
-      throw new WebApplicationException("Store with id of " + id + " does not exist.", 404);
+      throw new ResourceException(
+          ResourceErrorCode.STORE_NOT_FOUND, "Store with id " + id + " does not exist.");
     }
     return entity;
   }
@@ -51,7 +46,8 @@ public class StoreResource {
   @Transactional
   public Response create(Store store) {
     if (store.id != null) {
-      throw new WebApplicationException("Id was invalidly set on request.", 422);
+      throw new ResourceException(
+          ResourceErrorCode.STORE_ID_NOT_ALLOWED, "Id must not be supplied when creating a store.");
     }
 
     store.persist();
@@ -66,13 +62,15 @@ public class StoreResource {
   @Transactional
   public Store update(Long id, Store updatedStore) {
     if (updatedStore.name == null) {
-      throw new WebApplicationException("Store Name was not set on request.", 422);
+      throw new ResourceException(
+          ResourceErrorCode.STORE_NAME_REQUIRED, "Store name is required.");
     }
 
     Store entity = Store.findById(id);
 
     if (entity == null) {
-      throw new WebApplicationException("Store with id of " + id + " does not exist.", 404);
+      throw new ResourceException(
+          ResourceErrorCode.STORE_NOT_FOUND, "Store with id " + id + " does not exist.");
     }
 
     entity.name = updatedStore.name;
@@ -86,23 +84,29 @@ public class StoreResource {
   @PATCH
   @Path("{id}")
   @Transactional
-  public Store patch(Long id, Store updatedStore) {
-    if (updatedStore.name == null) {
-      throw new WebApplicationException("Store Name was not set on request.", 422);
+  public Store patch(Long id, StorePatchRequest patch) {
+    if (patch == null || (patch.name == null && patch.quantityProductsInStock == null)) {
+      throw new ResourceException(
+          ResourceErrorCode.STORE_PATCH_EMPTY, "At least one store field must be supplied.");
+    }
+    if (patch.name != null && patch.name.isBlank()) {
+      throw new ResourceException(
+          ResourceErrorCode.STORE_NAME_REQUIRED, "Store name must not be blank.");
     }
 
     Store entity = Store.findById(id);
 
     if (entity == null) {
-      throw new WebApplicationException("Store with id of " + id + " does not exist.", 404);
+      throw new ResourceException(
+          ResourceErrorCode.STORE_NOT_FOUND, "Store with id " + id + " does not exist.");
     }
 
-    if (entity.name != null) {
-      entity.name = updatedStore.name;
+    if (patch.name != null) {
+      entity.name = patch.name;
     }
 
-    if (entity.quantityProductsInStock != 0) {
-      entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
+    if (patch.quantityProductsInStock != null) {
+      entity.quantityProductsInStock = patch.quantityProductsInStock;
     }
 
     storeChanges.fire(StoreChanged.updated(snapshot(entity)));
@@ -116,7 +120,8 @@ public class StoreResource {
   public Response delete(Long id) {
     Store entity = Store.findById(id);
     if (entity == null) {
-      throw new WebApplicationException("Store with id of " + id + " does not exist.", 404);
+      throw new ResourceException(
+          ResourceErrorCode.STORE_NOT_FOUND, "Store with id " + id + " does not exist.");
     }
     entity.delete();
     return Response.status(204).build();
@@ -128,31 +133,5 @@ public class StoreResource {
     snapshot.name = source.name;
     snapshot.quantityProductsInStock = source.quantityProductsInStock;
     return snapshot;
-  }
-
-  @Provider
-  public static class ErrorMapper implements ExceptionMapper<Exception> {
-
-    @Inject ObjectMapper objectMapper;
-
-    @Override
-    public Response toResponse(Exception exception) {
-      LOGGER.error("Failed to handle request", exception);
-
-      int code = 500;
-      if (exception instanceof WebApplicationException) {
-        code = ((WebApplicationException) exception).getResponse().getStatus();
-      }
-
-      ObjectNode exceptionJson = objectMapper.createObjectNode();
-      exceptionJson.put("exceptionType", exception.getClass().getName());
-      exceptionJson.put("code", code);
-
-      if (exception.getMessage() != null) {
-        exceptionJson.put("error", exception.getMessage());
-      }
-
-      return Response.status(code).entity(exceptionJson).build();
-    }
   }
 }

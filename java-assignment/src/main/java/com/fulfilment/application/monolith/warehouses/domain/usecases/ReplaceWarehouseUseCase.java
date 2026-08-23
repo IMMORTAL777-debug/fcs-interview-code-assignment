@@ -33,6 +33,7 @@ public class ReplaceWarehouseUseCase implements ReplaceWarehouseOperation {
   @Transactional
   public void replace(Warehouse newWarehouse) {
     var location = WarehouseValidation.validateCommon(newWarehouse, locationResolver);
+    warehouseStore.lockLocation(location.identification);
     var currentWarehouse =
         warehouseStore.findByBusinessUnitCode(newWarehouse.businessUnitCode);
     if (currentWarehouse == null) {
@@ -54,7 +55,7 @@ public class ReplaceWarehouseUseCase implements ReplaceWarehouseOperation {
         newWarehouse, location, currentWarehouse, warehouseStore);
 
     currentWarehouse.archivedAt = LocalDateTime.now();
-    warehouseStore.remove(currentWarehouse);
+    warehouseStore.archive(currentWarehouse);
 
     newWarehouse.id = null;
     newWarehouse.createdAt = LocalDateTime.now();

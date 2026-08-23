@@ -35,6 +35,6 @@ public class ArchiveWarehouseUseCase implements ArchiveWarehouseOperation {
     }
 
     currentWarehouse.archivedAt = LocalDateTime.now();
-    warehouseStore.remove(currentWarehouse);
+    warehouseStore.archive(currentWarehouse);
   }
 }

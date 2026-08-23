@@ -11,6 +11,11 @@ public class WarehouseException extends RuntimeException {
     this.errorCode = Objects.requireNonNull(errorCode, "errorCode must not be null");
   }
 
+  public WarehouseException(WarehouseErrorCode errorCode, String message, Throwable cause) {
+    super(message, cause);
+    this.errorCode = Objects.requireNonNull(errorCode, "errorCode must not be null");
+  }
+
   public WarehouseErrorCode errorCode() {
     return errorCode;
   }

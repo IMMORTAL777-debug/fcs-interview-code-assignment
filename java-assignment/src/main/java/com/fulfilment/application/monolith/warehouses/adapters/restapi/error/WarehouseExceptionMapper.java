@@ -1,13 +1,13 @@
 package com.fulfilment.application.monolith.warehouses.adapters.restapi.error;
 
+import com.fulfilment.application.monolith.common.rest.ApiErrorResponse;
 import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseErrorCode;
 import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseException;
-import com.warehouse.api.beans.ApiErrorResponse;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import java.util.Date;
+import java.time.Instant;
 
 @Provider
 public class WarehouseExceptionMapper implements ExceptionMapper<WarehouseException> {
@@ -15,11 +15,9 @@ public class WarehouseExceptionMapper implements ExceptionMapper<WarehouseExcept
   @Override
   public Response toResponse(WarehouseException exception) {
     int status = statusFor(exception.errorCode());
-    var error = new ApiErrorResponse();
-    error.setCode(exception.errorCode().name());
-    error.setMessage(exception.getMessage());
-    error.setStatus(status);
-    error.setTimestamp(new Date());
+    var error =
+        new ApiErrorResponse(
+            exception.errorCode().name(), exception.getMessage(), status, Instant.now());
 
     return Response.status(status).type(MediaType.APPLICATION_JSON_TYPE).entity(error).build();
   }

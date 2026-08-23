@@ -22,10 +22,10 @@ class InMemoryWarehouseStore implements WarehouseStore {
   }
 
   @Override
-  public void update(Warehouse warehouse) {}
+  public void lockLocation(String locationIdentifier) {}
 
   @Override
-  public void remove(Warehouse warehouse) {
+  public void archive(Warehouse warehouse) {
     history.stream()
         .filter(stored -> stored.id.equals(warehouse.id))
         .findFirst()

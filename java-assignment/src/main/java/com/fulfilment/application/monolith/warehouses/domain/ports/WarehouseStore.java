@@ -9,9 +9,9 @@ public interface WarehouseStore {
 
   void create(Warehouse warehouse);
 
-  void update(Warehouse warehouse);
+  void lockLocation(String locationIdentifier);
 
-  void remove(Warehouse warehouse);
+  void archive(Warehouse warehouse);
 
   Warehouse findByBusinessUnitCode(String buCode);
 }

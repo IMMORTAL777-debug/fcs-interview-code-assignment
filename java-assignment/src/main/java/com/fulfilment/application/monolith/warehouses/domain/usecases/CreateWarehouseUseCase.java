@@ -33,6 +33,7 @@ public class CreateWarehouseUseCase implements CreateWarehouseOperation {
   @Transactional
   public void create(Warehouse warehouse) {
     var location = WarehouseValidation.validateCommon(warehouse, locationResolver);
+    warehouseStore.lockLocation(location.identification);
     if (warehouseStore.findByBusinessUnitCode(warehouse.businessUnitCode) != null) {
       throw new WarehouseException(
           WarehouseErrorCode.DUPLICATE_BUSINESS_UNIT_CODE,
