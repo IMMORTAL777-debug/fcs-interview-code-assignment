@@ -1,7 +1,8 @@
 package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
 import com.fulfilment.application.monolith.location.LocationGateway;
-import com.fulfilment.application.monolith.warehouses.domain.WarehouseException;
+import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseErrorCode;
+import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseException;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.CreateWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.LocationResolver;
@@ -33,7 +34,8 @@ public class CreateWarehouseUseCase implements CreateWarehouseOperation {
   public void create(Warehouse warehouse) {
     var location = WarehouseValidation.validateCommon(warehouse, locationResolver);
     if (warehouseStore.findByBusinessUnitCode(warehouse.businessUnitCode) != null) {
-      throw WarehouseException.conflict(
+      throw new WarehouseException(
+          WarehouseErrorCode.DUPLICATE_BUSINESS_UNIT_CODE,
           "An active warehouse with business unit code "
               + warehouse.businessUnitCode
               + " already exists.");

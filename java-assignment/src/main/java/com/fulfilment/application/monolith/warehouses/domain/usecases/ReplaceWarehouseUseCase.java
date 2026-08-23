@@ -1,7 +1,8 @@
 package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
 import com.fulfilment.application.monolith.location.LocationGateway;
-import com.fulfilment.application.monolith.warehouses.domain.WarehouseException;
+import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseErrorCode;
+import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseException;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.LocationResolver;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ReplaceWarehouseOperation;
@@ -35,13 +36,15 @@ public class ReplaceWarehouseUseCase implements ReplaceWarehouseOperation {
     var currentWarehouse =
         warehouseStore.findByBusinessUnitCode(newWarehouse.businessUnitCode);
     if (currentWarehouse == null) {
-      throw WarehouseException.notFound(
+      throw new WarehouseException(
+          WarehouseErrorCode.WAREHOUSE_NOT_FOUND,
           "No active warehouse exists with business unit code "
               + newWarehouse.businessUnitCode
               + ".");
     }
     if (!currentWarehouse.stock.equals(newWarehouse.stock)) {
-      throw WarehouseException.invalid(
+      throw new WarehouseException(
+          WarehouseErrorCode.REPLACEMENT_STOCK_MISMATCH,
           "Replacement stock must match the current warehouse stock of "
               + currentWarehouse.stock
               + ".");

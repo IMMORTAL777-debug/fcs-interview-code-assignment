@@ -34,9 +34,9 @@ paths:
                 $ref: '#/components/schemas/Warehouse'
         
         '400':
-          description: Invalid request parameters
+          $ref: '#/components/responses/BadRequest'
         '409':
-          description: Business unit code or location capacity conflict
+          $ref: '#/components/responses/Conflict'
 
   /warehouse/{id}:
     get:
@@ -56,9 +56,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Warehouse'
         '404':
-          description: Warehouse unit not found
+          $ref: '#/components/responses/NotFound'
         '400':
-          description: Invalid warehouse ID
+          $ref: '#/components/responses/BadRequest'
     delete:
       summary: Archive a warehouse unit by ID
       parameters:
@@ -72,7 +72,7 @@ paths:
         '204':
           description: Warehouse unit archived
         '404':
-          description: Warehouse unit not found
+          $ref: '#/components/responses/NotFound'
 
   /warehouse/{businessUnitCode}/replacement:
     post:
@@ -102,14 +102,58 @@ paths:
               schema:
                 $ref: '#/components/schemas/Warehouse'
         '404':
-          description: Warehouse unit not found
+          $ref: '#/components/responses/NotFound'
 
         '400':
-          description: Invalid request parameters
+          $ref: '#/components/responses/BadRequest'
         '409':
-          description: Replacement conflicts with location constraints
+          $ref: '#/components/responses/Conflict'
 components:
+  responses:
+    BadRequest:
+      description: The request is invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+    NotFound:
+      description: The warehouse was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+    Conflict:
+      description: The request conflicts with warehouse business rules
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
   schemas:
+    ApiErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+        - status
+        - timestamp
+      properties:
+        code:
+          type: string
+          description: Stable, machine-readable warehouse error code
+          example: DUPLICATE_BUSINESS_UNIT_CODE
+        message:
+          type: string
+          description: Human-readable explanation of the error
+          example: An active warehouse with this business unit code already exists.
+        status:
+          type: integer
+          format: int32
+          description: HTTP status code
+          example: 409
+        timestamp:
+          type: string
+          format: date-time
+          description: Time at which the error response was created
     Warehouse:
       type: object
       properties:

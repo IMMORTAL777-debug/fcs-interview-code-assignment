@@ -5,7 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.fulfilment.application.monolith.warehouses.domain.WarehouseException;
+import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseErrorCode;
+import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseException;
 import org.junit.jupiter.api.Test;
 
 public class ArchiveWarehouseUseCaseTest {
@@ -34,6 +35,6 @@ public class ArchiveWarehouseUseCaseTest {
                 new ArchiveWarehouseUseCase(store)
                     .archive(warehouse("MWH.404", "AMSTERDAM-001", 50, 10)));
 
-    assertEquals(WarehouseException.Reason.NOT_FOUND, exception.reason());
+    assertEquals(WarehouseErrorCode.WAREHOUSE_NOT_FOUND, exception.errorCode());
   }
 }

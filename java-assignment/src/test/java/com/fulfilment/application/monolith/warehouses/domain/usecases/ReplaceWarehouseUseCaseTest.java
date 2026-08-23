@@ -6,7 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fulfilment.application.monolith.location.LocationGateway;
-import com.fulfilment.application.monolith.warehouses.domain.WarehouseException;
+import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseErrorCode;
+import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseException;
 import org.junit.jupiter.api.Test;
 
 public class ReplaceWarehouseUseCaseTest {
@@ -32,16 +33,18 @@ public class ReplaceWarehouseUseCaseTest {
     var useCase = new ReplaceWarehouseUseCase(store, new LocationGateway());
 
     assertEquals(
-        WarehouseException.Reason.NOT_FOUND,
+        WarehouseErrorCode.WAREHOUSE_NOT_FOUND,
         assertThrows(
                 WarehouseException.class,
                 () -> useCase.replace(warehouse("MWH.404", "AMSTERDAM-001", 50, 10)))
-            .reason());
+            .errorCode());
 
     store.create(warehouse("MWH.100", "AMSTERDAM-001", 50, 10));
-    assertThrows(
-        WarehouseException.class,
-        () -> useCase.replace(warehouse("MWH.100", "AMSTERDAM-001", 50, 9)));
+    var stockMismatch =
+        assertThrows(
+            WarehouseException.class,
+            () -> useCase.replace(warehouse("MWH.100", "AMSTERDAM-001", 50, 9)));
+    assertEquals(WarehouseErrorCode.REPLACEMENT_STOCK_MISMATCH, stockMismatch.errorCode());
   }
 
   @Test
@@ -49,10 +52,13 @@ public class ReplaceWarehouseUseCaseTest {
     var store = new InMemoryWarehouseStore();
     store.create(warehouse("MWH.100", "AMSTERDAM-001", 50, 10));
 
-    assertThrows(
-        WarehouseException.class,
-        () ->
-            new ReplaceWarehouseUseCase(store, new LocationGateway())
-                .replace(warehouse("MWH.100", "AMSTERDAM-001", 9, 10)));
+    var exception =
+        assertThrows(
+            WarehouseException.class,
+            () ->
+                new ReplaceWarehouseUseCase(store, new LocationGateway())
+                    .replace(warehouse("MWH.100", "AMSTERDAM-001", 9, 10)));
+
+    assertEquals(WarehouseErrorCode.STOCK_EXCEEDS_CAPACITY, exception.errorCode());
   }
 }

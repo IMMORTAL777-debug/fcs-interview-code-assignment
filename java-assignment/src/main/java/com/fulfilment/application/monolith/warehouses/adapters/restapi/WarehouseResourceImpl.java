@@ -1,7 +1,8 @@
 package com.fulfilment.application.monolith.warehouses.adapters.restapi;
 
 import com.fulfilment.application.monolith.warehouses.adapters.database.WarehouseRepository;
-import com.fulfilment.application.monolith.warehouses.domain.WarehouseException;
+import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseErrorCode;
+import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseException;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ArchiveWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.CreateWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ReplaceWarehouseOperation;
@@ -36,7 +37,9 @@ public class WarehouseResourceImpl implements WarehouseResource {
   @ResponseStatus(201)
   public Warehouse createANewWarehouseUnit(@NotNull Warehouse data) {
     if (data.getId() != null) {
-      throw WarehouseException.invalid("Id must not be supplied when creating a warehouse.");
+      throw new WarehouseException(
+          WarehouseErrorCode.WAREHOUSE_ID_NOT_ALLOWED,
+          "Id must not be supplied when creating a warehouse.");
     }
     var warehouse = toDomain(data);
     createWarehouseOperation.create(warehouse);
@@ -58,7 +61,8 @@ public class WarehouseResourceImpl implements WarehouseResource {
       String businessUnitCode, @NotNull Warehouse data) {
     if (data.getBusinessUnitCode() != null
         && !businessUnitCode.equalsIgnoreCase(data.getBusinessUnitCode())) {
-      throw WarehouseException.invalid(
+      throw new WarehouseException(
+          WarehouseErrorCode.BUSINESS_UNIT_CODE_MISMATCH,
           "The request business unit code must match the path business unit code.");
     }
     var warehouse = toDomain(data);
@@ -73,12 +77,15 @@ public class WarehouseResourceImpl implements WarehouseResource {
     try {
       databaseId = Long.valueOf(id);
     } catch (NumberFormatException exception) {
-      throw WarehouseException.invalid("Warehouse id must be a number.");
+      throw new WarehouseException(
+          WarehouseErrorCode.INVALID_WAREHOUSE_ID, "Warehouse id must be a number.");
     }
 
     var warehouse = warehouseRepository.findActiveById(databaseId);
     if (warehouse == null) {
-      throw WarehouseException.notFound("Warehouse with id " + id + " was not found.");
+      throw new WarehouseException(
+          WarehouseErrorCode.WAREHOUSE_NOT_FOUND,
+          "Warehouse with id " + id + " was not found.");
     }
     return warehouse;
   }

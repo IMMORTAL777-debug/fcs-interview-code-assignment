@@ -5,6 +5,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -61,7 +62,12 @@ class WarehouseEndpointTest {
         .when()
         .post("warehouse")
         .then()
-        .statusCode(409);
+        .statusCode(409)
+        .contentType(ContentType.JSON)
+        .body("code", equalTo("DUPLICATE_BUSINESS_UNIT_CODE"))
+        .body("status", equalTo(409))
+        .body("message", notNullValue())
+        .body("timestamp", notNullValue());
 
     Map<String, Object> replacement =
         Map.of(
@@ -86,9 +92,23 @@ class WarehouseEndpointTest {
     assertEquals(2, replacementHistory.size());
     assertNotNull(replacementHistory.get(0).archivedAt);
 
-    given().when().get("warehouse/" + createdId).then().statusCode(404);
+    given()
+        .when()
+        .get("warehouse/" + createdId)
+        .then()
+        .statusCode(404)
+        .body("code", equalTo("WAREHOUSE_NOT_FOUND"))
+        .body("status", equalTo(404));
     given().when().delete("warehouse/" + replacementId).then().statusCode(204);
     given().when().get("warehouse/" + replacementId).then().statusCode(404);
+
+    given()
+        .when()
+        .get("warehouse/not-a-number")
+        .then()
+        .statusCode(400)
+        .body("code", equalTo("INVALID_WAREHOUSE_ID"))
+        .body("status", equalTo(400));
 
     given()
         .when()

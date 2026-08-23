@@ -1,6 +1,7 @@
 package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
-import com.fulfilment.application.monolith.warehouses.domain.WarehouseException;
+import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseErrorCode;
+import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseException;
 import com.fulfilment.application.monolith.warehouses.domain.models.Location;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.LocationResolver;
@@ -13,29 +14,36 @@ final class WarehouseValidation {
 
   static Location validateCommon(Warehouse warehouse, LocationResolver locationResolver) {
     if (warehouse == null) {
-      throw WarehouseException.invalid("Warehouse data is required.");
+      throw new WarehouseException(
+          WarehouseErrorCode.WAREHOUSE_DATA_REQUIRED, "Warehouse data is required.");
     }
     if (warehouse.businessUnitCode == null || warehouse.businessUnitCode.isBlank()) {
-      throw WarehouseException.invalid("Business unit code is required.");
+      throw new WarehouseException(
+          WarehouseErrorCode.BUSINESS_UNIT_CODE_REQUIRED, "Business unit code is required.");
     }
     if (warehouse.location == null || warehouse.location.isBlank()) {
-      throw WarehouseException.invalid("Location is required.");
+      throw new WarehouseException(WarehouseErrorCode.LOCATION_REQUIRED, "Location is required.");
     }
     if (warehouse.capacity == null || warehouse.capacity <= 0) {
-      throw WarehouseException.invalid("Capacity must be greater than zero.");
+      throw new WarehouseException(
+          WarehouseErrorCode.INVALID_CAPACITY, "Capacity must be greater than zero.");
     }
     if (warehouse.stock == null || warehouse.stock < 0) {
-      throw WarehouseException.invalid("Stock cannot be negative.");
+      throw new WarehouseException(
+          WarehouseErrorCode.INVALID_STOCK, "Stock cannot be negative.");
     }
     if (warehouse.stock > warehouse.capacity) {
-      throw WarehouseException.invalid("Warehouse capacity cannot be lower than its stock.");
+      throw new WarehouseException(
+          WarehouseErrorCode.STOCK_EXCEEDS_CAPACITY,
+          "Warehouse capacity cannot be lower than its stock.");
     }
 
     warehouse.businessUnitCode = warehouse.businessUnitCode.trim().toUpperCase(Locale.ROOT);
     warehouse.location = warehouse.location.trim();
     Location location = locationResolver.resolveByIdentifier(warehouse.location);
     if (location == null) {
-      throw WarehouseException.invalid("Unknown location: " + warehouse.location);
+      throw new WarehouseException(
+          WarehouseErrorCode.LOCATION_NOT_FOUND, "Unknown location: " + warehouse.location);
     }
     warehouse.location = location.identification;
     return location;
@@ -53,14 +61,16 @@ final class WarehouseValidation {
             .toList();
 
     if (warehousesAtLocation.size() >= location.maxNumberOfWarehouses) {
-      throw WarehouseException.conflict(
+      throw new WarehouseException(
+          WarehouseErrorCode.LOCATION_WAREHOUSE_LIMIT_REACHED,
           "Location " + location.identification + " has reached its warehouse limit.");
     }
 
     long allocatedCapacity =
         warehousesAtLocation.stream().mapToLong(warehouse -> warehouse.capacity).sum();
     if (allocatedCapacity + candidate.capacity > location.maxCapacity) {
-      throw WarehouseException.invalid(
+      throw new WarehouseException(
+          WarehouseErrorCode.LOCATION_CAPACITY_EXCEEDED,
           "Total warehouse capacity at "
               + location.identification
               + " cannot exceed "

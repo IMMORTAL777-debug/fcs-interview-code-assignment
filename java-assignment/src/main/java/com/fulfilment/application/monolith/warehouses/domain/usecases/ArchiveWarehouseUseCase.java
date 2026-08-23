@@ -1,6 +1,7 @@
 package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
-import com.fulfilment.application.monolith.warehouses.domain.WarehouseException;
+import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseErrorCode;
+import com.fulfilment.application.monolith.warehouses.domain.exceptions.WarehouseException;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ArchiveWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
@@ -21,11 +22,13 @@ public class ArchiveWarehouseUseCase implements ArchiveWarehouseOperation {
   @Transactional
   public void archive(Warehouse warehouse) {
     if (warehouse == null || warehouse.businessUnitCode == null) {
-      throw WarehouseException.notFound("Warehouse was not found.");
+      throw new WarehouseException(
+          WarehouseErrorCode.WAREHOUSE_NOT_FOUND, "Warehouse was not found.");
     }
     var currentWarehouse = warehouseStore.findByBusinessUnitCode(warehouse.businessUnitCode);
     if (currentWarehouse == null) {
-      throw WarehouseException.notFound(
+      throw new WarehouseException(
+          WarehouseErrorCode.WAREHOUSE_NOT_FOUND,
           "No active warehouse exists with business unit code "
               + warehouse.businessUnitCode
               + ".");
