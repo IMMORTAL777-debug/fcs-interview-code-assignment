@@ -30,6 +30,22 @@ Execute the Maven build on the root of the project:
 ./mvnw package
 ```
 
+## Tests and coverage
+
+Run the complete build, test suite, and coverage check with:
+
+```sh
+./mvnw clean verify
+```
+
+The build fails when application line coverage is below 80%. After the build,
+open `target/site/jacoco/index.html` to view the detailed JaCoCo report.
+
+GitHub Actions runs the same verification for every pull request and every push
+to `main`. Each workflow run includes the coverage percentage in its summary and
+retains the complete HTML report as the `jacoco-coverage-report` artifact for 30
+days.
+
 ## Running the demo
 
 ### Live coding with Quarkus

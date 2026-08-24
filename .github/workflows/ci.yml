@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-coverage:
+    name: Build, test, and coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: java-assignment
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Java 17
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: java-assignment/pom.xml
+
+      - name: Build, test, and enforce coverage
+        run: sh ./mvnw --batch-mode --no-transfer-progress clean verify
+
+      - name: Add coverage to the job summary
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          if [[ -f target/site/jacoco/jacoco.csv ]]; then
+            awk -F, 'NR > 1 { missed += $8; covered += $9 } END { total = missed + covered; printf "## Test coverage\n\n**Line coverage: %.2f%%** (%d/%d lines)\n", 100 * covered / total, covered, total }' target/site/jacoco/jacoco.csv >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload JaCoCo coverage report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: jacoco-coverage-report
+          path: java-assignment/target/site/jacoco/
+          if-no-files-found: warn
+          retention-days: 30
