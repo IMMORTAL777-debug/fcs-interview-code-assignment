@@ -123,4 +123,75 @@ class StoreLegacySynchronizationTest {
         .body("code", equalTo("STORE_PATCH_EMPTY"))
         .body("status", equalTo(422));
   }
+
+  @Test
+  void supportsStoreReadsDeletesAndValidationErrors() {
+    given().when().get("store").then().statusCode(200);
+    given().when().get("store/1").then().statusCode(200).body("name", equalTo("TONSTAD"));
+
+    given()
+        .contentType(ContentType.JSON)
+        .body(Map.of("id", 999, "name", "INVALID_STORE", "quantityProductsInStock", 1))
+        .when()
+        .post("store")
+        .then()
+        .statusCode(422)
+        .body("code", equalTo("STORE_ID_NOT_ALLOWED"));
+
+    given()
+        .contentType(ContentType.JSON)
+        .body(Map.of("quantityProductsInStock", 1))
+        .when()
+        .put("store/1")
+        .then()
+        .statusCode(422)
+        .body("code", equalTo("STORE_NAME_REQUIRED"));
+
+    given()
+        .contentType(ContentType.JSON)
+        .body(Map.of("name", "MISSING_STORE", "quantityProductsInStock", 1))
+        .when()
+        .put("store/999999")
+        .then()
+        .statusCode(404)
+        .body("code", equalTo("STORE_NOT_FOUND"));
+
+    given()
+        .contentType(ContentType.JSON)
+        .body(Map.of("name", " "))
+        .when()
+        .patch("store/1")
+        .then()
+        .statusCode(422)
+        .body("code", equalTo("STORE_NAME_REQUIRED"));
+
+    given()
+        .contentType(ContentType.JSON)
+        .body(Map.of("name", "MISSING_STORE"))
+        .when()
+        .patch("store/999999")
+        .then()
+        .statusCode(404)
+        .body("code", equalTo("STORE_NOT_FOUND"));
+
+    Long id =
+        given()
+            .contentType(ContentType.JSON)
+            .body(Map.of("name", "DELETE_TEST_STORE", "quantityProductsInStock", 2))
+            .when()
+            .post("store")
+            .then()
+            .statusCode(201)
+            .extract()
+            .jsonPath()
+            .getLong("id");
+
+    given().when().delete("store/" + id).then().statusCode(204);
+    given()
+        .when()
+        .delete("store/" + id)
+        .then()
+        .statusCode(404)
+        .body("code", equalTo("STORE_NOT_FOUND"));
+  }
 }
